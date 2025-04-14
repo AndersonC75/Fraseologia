@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fraseologia de Atendimento</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      background-color: #f7f7f7;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    h1 {
+      text-align: center;
+    }
+    .frase {
+      background: #ffffff;
+      border-left: 5px solid #4CAF50;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 5px;
+      position: relative;
+    }
+    .frase strong {
+      color: #4CAF50;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px 0;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .remover, .editar {
+      position: absolute;
+      top: 10px;
+      padding: 5px 10px;
+      border: none;
+      color: white;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .remover {
+      right: 10px;
+      background-color: #e74c3c;
+    }
+    .editar {
+      right: 80px;
+      background-color: #3498db;
+    }
+    .modoEscuro {
+      background-color: #333;
+      color: #eee;
+    }
+    .modoEscuro .frase {
+      background: #444;
+      color: #eee;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .tab {
+      margin: 5px;
+      padding: 8px 15px;
+      background: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: #45a049;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <h1>Fraseologia de Atendimento</h1>
+    <button onclick="alternarTema()">🌙 Modo Claro/Escuro</button>
+  </div>
+
+  <input type="text" id="novaFrase" placeholder="Digite a nova frase aqui...">
+  <select id="categoria">
+    <option value="Geral">Geral</option>
+	 <option value="Tentativa">Tentativa</option>
+    <option value="Impressora">Impressora</option>
+    <option value="Rede">Rede</option>
+    <option value="Sistema">Sistema</option>
+    <option value="Telefone">Telefone</option>
+    <option value="Monitoramento">Monitoramento</option>
+    <option value="Backup">Backup</option>
+    <option value="Segurança">Segurança</option>
+  </select>
+  <button onclick="adicionarFrase()">Adicionar Frase</button>
+  <input type="text" id="buscarFrase" placeholder="Buscar frase..." onkeyup="filtrarFrases()">
+
+  <div class="tabs" id="abas"></div>
+  <div id="listaFrases"></div>
+
+  <script>
+    let frases = [];
+    let categoriaAtiva = 'Todas';
+
+    // Carregar frases do localStorage ao iniciar
+    window.onload = function () {
+      const armazenadas = localStorage.getItem('frases');
+      if (armazenadas) {
+        frases = JSON.parse(armazenadas);
+      }
+      carregarFrases();
+    }
+
+    function salvarFrases() {
+      localStorage.setItem('frases', JSON.stringify(frases));
+    }
+
+    function adicionarFrase() {
+      const texto = document.getElementById('novaFrase').value.trim();
+      const categoria = document.getElementById('categoria').value;
+      if (!texto) return;
+      frases.push({ texto, categoria });
+      salvarFrases();
+      carregarFrases();
+      document.getElementById('novaFrase').value = '';
+    }
+
+    function carregarFrases() {
+      const lista = document.getElementById('listaFrases');
+      const abas = document.getElementById('abas');
+      lista.innerHTML = '';
+      abas.innerHTML = '';
+
+      const categorias = ['Todas', ...new Set(frases.map(f => f.categoria))];
+      categorias.forEach(cat => {
+        const aba = document.createElement('div');
+        aba.className = 'tab' + (cat === categoriaAtiva ? ' active' : '');
+        aba.innerText = cat;
+        aba.onclick = () => { categoriaAtiva = cat; carregarFrases(); };
+        abas.appendChild(aba);
+      });
+
+      frases.forEach((f, i) => {
+        if (categoriaAtiva !== 'Todas' && f.categoria !== categoriaAtiva) return;
+        const div = document.createElement('div');
+        div.className = 'frase';
+        div.innerHTML = `<strong>Categoria:</strong> ${f.categoria}<br><strong>Frase:</strong> <span>${f.texto}</span>
+        <button class="editar" onclick="editarFrase(${i})">Editar</button>
+        <button class="remover" onclick="removerFrase(${i})">Remover</button>`;
+        lista.appendChild(div);
+      });
+    }
+
+    function removerFrase(i) {
+      if (confirm('Tem certeza que deseja remover esta frase?')) {
+        frases.splice(i, 1);
+        salvarFrases();
+        carregarFrases();
+      }
+    }
+
+    function editarFrase(i) {
+      const novoTexto = prompt('Edite a frase:', frases[i].texto);
+      if (novoTexto !== null) {
+        frases[i].texto = novoTexto.trim() || frases[i].texto;
+        const novaCategoria = prompt('Edite a categoria:', frases[i].categoria);
+        if (novaCategoria) frases[i].categoria = novaCategoria;
+        salvarFrases();
+        carregarFrases();
+      }
+    }
+
+    function filtrarFrases() {
+      const busca = document.getElementById('buscarFrase').value.toLowerCase();
+      document.querySelectorAll('.frase').forEach(f => {
+        f.style.display = f.textContent.toLowerCase().includes(busca) ? 'block' : 'none';
+      });
+    }
+
+    function alternarTema() {
+      document.body.classList.toggle('modoEscuro');
+    }
+
+  </script>
+
+</body>
+</html>
